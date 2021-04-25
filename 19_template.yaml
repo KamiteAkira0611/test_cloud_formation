@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  testVPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: 10.0.0.0/16
+
+  testSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: test
+      VpcId: !Ref testVPC
+
+  testSubnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      VpcId: !Ref testVPC
+      CidrBlock: 10.0.0.0/24
+
+  testLambda:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Description: test
+      Runtime: python3.8
+      Handler: index.handler
+      Role: "arn:aws:iam::384981330934:role/test_lambda"
+      Code:
+        S3Bucket: kamite
+        S3Key: test.py.zip
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref testSecurityGroup
+        SubnetIds:
+          - !Ref testSubnet
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref testDDBTable
+
+  testDDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: room_table
+      AttributeDefinitions:
+        - AttributeName: device_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: device_id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
